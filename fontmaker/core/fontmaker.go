@@ -400,29 +400,31 @@ func (me *FontMaker) GetInfoFromTrueType(fontpath string, fontmaps []FontMap) (T
 	missingWidth := me.MultiplyAndRoundWithUInt64(k, parser.widths[0])
 	info.PushInt64("MissingWidth", missingWidth)
 
-	widths := make(map[int]int64)
-	max := 256
-	c := 0
-	for c < max {
-		widths[c] = missingWidth
-		c++
-	}
-
-	c = 0 //reset
-	for c < max {
-		if fontmaps[c].Name != ".notdef" {
-			uv := fontmaps[c].Uv
-			if val, ok := parser.chars[int(uv)]; ok {
-				w := parser.widths[val]
-				widths[c] = me.MultiplyAndRoundWithUInt64(k, w)
-			} else {
-				me.results = append(me.results, fmt.Sprintf("Warning: Character %s (%d) is missing", fontmaps[c].Name, fontmaps[c].Uv))
-			}
+	//find widths
+	if fontmaps != nil {
+		widths := make(map[int]int64)
+		max := 256
+		c := 0
+		for c < max {
+			widths[c] = missingWidth
+			c++
 		}
-		c++
-	}
-	info.PushMapIntInt64("Widths", widths)
 
+		c = 0 //reset
+		for c < max {
+			if fontmaps[c].Name != ".notdef" {
+				uv := fontmaps[c].Uv
+				if val, ok := parser.chars[int(uv)]; ok {
+					w := parser.widths[val]
+					widths[c] = me.MultiplyAndRoundWithUInt64(k, w)
+				} else {
+					me.results = append(me.results, fmt.Sprintf("Warning: Character %s (%d) is missing", fontmaps[c].Name, fontmaps[c].Uv))
+				}
+			}
+			c++
+		}
+		info.PushMapIntInt64("Widths", widths)
+	}
 	return info, nil
 }
 

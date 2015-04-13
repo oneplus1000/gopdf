@@ -243,6 +243,10 @@ func (me *GoPdf) AddFontUnicode(family string, ttffile string) error {
 	var uifont UnicodeIFont
 	uifont.Init()
 	uifont.SetFamily(family)
+	err = uifont.SetTtf(ttffile)
+	if err != nil {
+		return err
+	}
 
 	fontDesc := new(FontDescriptorObj)
 	fontDesc.Init(func() *GoPdf {
