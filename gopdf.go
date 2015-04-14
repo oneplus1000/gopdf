@@ -209,6 +209,9 @@ func (me *GoPdf) GetBytesPdf() []byte {
 		i++
 	}
 	me.xref(linelens, buff, &i)
+
+	fmt.Printf("\n%s\n", buff)
+
 	return buff.Bytes()
 }
 
@@ -253,9 +256,27 @@ func (me *GoPdf) AddFontUnicode(family string, ttffile string) error {
 		return me
 	})
 	fontDesc.SetFont(&uifont)
-	DebugIObj(fontDesc)
-
+	//DebugIObj(fontDesc)
 	me.addObj(fontDesc)
+
+	//start add font obj
+	font := new(FontObj)
+	font.Init(func() *GoPdf {
+		return me
+	})
+	font.Family = family
+	font.Font = &uifont
+	font.IsEmbedFont = false
+	index := me.addObj(font)
+	if me.indexOfProcSet != -1 {
+		procset := me.pdfObjs[me.indexOfProcSet].(*ProcSetObj)
+		if !procset.Realtes.IsContainsFamily(family) {
+			procset.Realtes = append(procset.Realtes, RelateFont{Family: family, IndexOfObj: index, CountOfFont: me.Curr.CountOfFont})
+			font.CountOfFont = me.Curr.CountOfFont
+			me.Curr.CountOfFont++
+		}
+	}
+	//DebugIObj(font)
 
 	return nil
 }

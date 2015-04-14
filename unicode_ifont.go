@@ -37,8 +37,8 @@ func (me *UnicodeIFont) GetUt() int {
 	return 0
 }
 func (me *UnicodeIFont) GetCw() FontCw {
-	var fcw FontCw
-	return fcw
+	//var fcw FontCw
+	return nil
 }
 
 func (me *UnicodeIFont) GetEnc() string {
