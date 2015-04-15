@@ -30,6 +30,7 @@ type GoPdf struct {
 	//ต่ำแหน่งปัจจุบัน
 	Curr Current
 
+	indexToUnicodeObj     []int
 	indexEncodingObjFonts []int
 	indexOfContent        int
 
@@ -183,6 +184,19 @@ func (me *GoPdf) SetFont(family string, style string, size int) {
 		i++
 	}
 
+	i = 0
+	max = len(me.indexToUnicodeObj)
+	for i < max {
+		ifont := me.pdfObjs[me.indexToUnicodeObj[i]].(*ToUnicodeObj).GetFont()
+
+		if ifont.GetFamily() == family {
+			me.Curr.Font_Size = size
+			me.Curr.Font_Style = style
+			me.Curr.Font_IFont = ifont
+			break
+		}
+		i++
+	}
 }
 
 //create pdf file
@@ -277,6 +291,15 @@ func (me *GoPdf) AddFontUnicode(family string, ttffile string) error {
 		}
 	}
 	//DebugIObj(font)
+
+	tounicode := new(ToUnicodeObj)
+	tounicode.SetFont(&uifont)
+	tounicode.Init(func() *GoPdf {
+		return me
+	})
+	index = me.addObj(tounicode)
+	me.indexToUnicodeObj = append(me.indexToUnicodeObj, index)
+	//fmt.Printf("index = %d\n", index)
 
 	return nil
 }

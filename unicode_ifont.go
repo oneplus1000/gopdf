@@ -58,7 +58,7 @@ func (me *UnicodeIFont) SetFamily(family string) {
 }
 
 func (me *UnicodeIFont) GetFamily() string {
-	return ""
+	return me.family
 }
 
 func (me *UnicodeIFont) SetTtf(ttffile string) error {
