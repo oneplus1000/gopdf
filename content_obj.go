@@ -40,9 +40,24 @@ func (me *ContentObj) GetObjBuff() *bytes.Buffer {
 func (me *ContentObj) AppendStream(rectangle *Rect, text string) {
 
 	ifont := me.getRoot().Curr.Font_IFont
-	fmt.Printf("xxxx%#v\n\n", ifont)
+
 	if uifont, ok := ifont.(*UnicodeIFont); ok {
 		_ = uifont
+		fontSize := me.getRoot().Curr.Font_Size
+
+		x := fmt.Sprintf("%0.2f", me.getRoot().Curr.X)
+		y := fmt.Sprintf("%0.2f", me.getRoot().config.PageSize.H-me.getRoot().Curr.Y-(float64(fontSize)*0.7))
+
+		me.stream.WriteString("BT\n")
+		me.stream.WriteString(x + " " + y + " TD\n")
+		me.stream.WriteString("/F" + strconv.Itoa(me.getRoot().Curr.Font_FontCount+1) + " " + strconv.Itoa(fontSize) + " Tf\n")
+		me.stream.WriteString("<0102>Tj\n")
+		me.stream.WriteString("ET\n")
+		if rectangle == nil {
+			//me.getRoot().Curr.X += StrHelper_GetStringWidth(text, fontSize, ifont)
+		} else {
+			me.getRoot().Curr.X += rectangle.W
+		}
 
 	} else {
 		fontSize := me.getRoot().Curr.Font_Size

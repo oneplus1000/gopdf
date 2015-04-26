@@ -273,6 +273,13 @@ func (me *GoPdf) AddFontUnicode(family string, ttffile string) error {
 	//DebugIObj(fontDesc)
 	me.addObj(fontDesc)
 
+	embedfont := new(EmbedFontObj)
+	embedfont.Init(func() *GoPdf {
+		return me
+	})
+	embedfont.SetFontTtf(&uifont, ttffile)
+	me.addObj(embedfont)
+
 	//start add font obj
 	font := new(FontObj)
 	font.Init(func() *GoPdf {
