@@ -18,7 +18,7 @@ func TestArabic(t *testing.T) {
 		log.Print(err.Error())
 		return
 	}*/
-	err := pdf.AddTTFFontWithOption("HDZB_5", "/home/oneplus/IdeaProjects/PdfCmd/testing/ttf/NotoNaskhArabic-Regular.ttf", gopdf.TtfOption{
+	err := pdf.AddTTFFontWithOption("HDZB_5", "./res/NotoNaskhArabic-Regular.ttf", gopdf.TtfOption{
 		UseKerning: true,
 	})
 	if err != nil {
