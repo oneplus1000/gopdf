@@ -240,6 +240,8 @@ func (t *TTFParser) parse(rd io.Reader) error {
 	if err != nil {
 		return err
 	}
+
+	//fmt.Printf("numTables=%d\n", numTables)
 	t.Skip(fd, 3*2) //searchRange, entrySelector, rangeShift
 	t.tables = make(map[string]TableDirectoryEntry)
 	for i < numTables {
@@ -248,6 +250,7 @@ func (t *TTFParser) parse(rd io.Reader) error {
 		if err != nil {
 			return err
 		}
+		//fmt.Printf("tag=%s\n", string(tag))
 
 		checksum, err := t.ReadULong(fd)
 		if err != nil {
@@ -317,6 +320,13 @@ func (t *TTFParser) parse(rd io.Reader) error {
 
 	if t.useKerning {
 		err = t.Parsekern(fd)
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, ok := t.tables["GSUB"]; ok {
+		err = t.ParseGSUB(fd)
 		if err != nil {
 			return err
 		}

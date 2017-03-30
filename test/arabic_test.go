@@ -7,6 +7,8 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+//https://www.microsoft.com/typography/otspec/gsub.htm#EX1
+
 func TestArabic(t *testing.T) {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: 595.28, H: 841.89}}) //595.28, 841.89 = A4
