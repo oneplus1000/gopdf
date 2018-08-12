@@ -402,6 +402,7 @@ func (gp *GoPdf) Close() error {
 }
 
 func (gp *GoPdf) compilePdf(w io.Writer) error {
+
 	gp.prepare()
 	err := gp.Close()
 	if err != nil {
@@ -747,7 +748,46 @@ func (gp *GoPdf) protection() *PDFProtection {
 	return gp.pdfProtection
 }
 
+func (gp *GoPdf) addPageNumbers() error {
+	//indexOfPages := make(map[int]int)
+	indexOfContents := make(map[int]int)
+	pageNum := 0
+	max := len(gp.pdfObjs)
+	for i := 0; i < max; i++ {
+		objtype := gp.pdfObjs[i].getType()
+		if objtype == "Page" {
+			pageNum++
+			//indexOfPages[pageNum] = i
+		} else if objtype == "Content" {
+			//gp.pdfObjs[gp.indexOfContent].(*ContentObj)
+			indexOfContents[pageNum] = i
+		}
+	}
+
+	pageMax := pageNum
+	pageNum = 1
+	for pageNum <= pageMax {
+		text := fmt.Sprintf("%d/%d", pageNum, pageMax)
+		gp.curr.X = 300
+		gp.curr.Y = 50
+		err := gp.curr.Font_ISubset.AddChars(text)
+		if err != nil {
+			return err
+		}
+		indexOfContent := indexOfContents[pageNum]
+		err = gp.pdfObjs[indexOfContent].(*ContentObj).AppendStreamText(text)
+		if err != nil {
+			return err
+		}
+		pageNum++
+	}
+
+	return nil
+}
+
 func (gp *GoPdf) prepare() {
+
+	gp.addPageNumbers() //hack
 
 	if gp.isUseProtection() {
 		encObj := gp.pdfProtection.encryptionObj()
