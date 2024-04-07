@@ -1282,8 +1282,49 @@ func (gp *GoPdf) MultiCellWithOption(rectangle *Rect, text string, opt CellOptio
 		return err
 	}
 	gp.PointsToUnitsVar(&lineHeight)
+	/*
+		rr := []rune(text)
+		size := len(rr)
+		index := size - 1
+		end := 0
+		step := -1
 
-	for i, v := range []rune(text) {
+		for {
+			if index <= end {
+				break
+			}
+
+			v := rr[index]
+			if totalLineHeight+lineHeight > rectangle.H {
+				break
+			}
+			lineWidth, _ := gp.MeasureTextWidth(string(line))
+			runeWidth, _ := gp.MeasureTextWidth(string(v))
+
+			if lineWidth+runeWidth > rectangle.W {
+				gp.CellWithOption(&Rect{W: rectangle.W, H: lineHeight}, string(line), opt)
+				gp.Br(lineHeight)
+				gp.SetX(x)
+				totalLineHeight = totalLineHeight + lineHeight
+				line = nil
+			}
+
+			line = append(line, v)
+
+			if index == length-1 {
+				gp.CellWithOption(&Rect{W: rectangle.W, H: lineHeight}, string(line), opt)
+				gp.Br(lineHeight)
+				gp.SetX(x)
+			}
+
+			index += step
+		}
+	*/
+
+	rr := []rune(text)
+	rr = reverseRune(rr, opt.RtlLineBrk)
+
+	for i, v := range rr {
 		if totalLineHeight+lineHeight > rectangle.H {
 			break
 		}
@@ -1291,7 +1332,8 @@ func (gp *GoPdf) MultiCellWithOption(rectangle *Rect, text string, opt CellOptio
 		runeWidth, _ := gp.MeasureTextWidth(string(v))
 
 		if lineWidth+runeWidth > rectangle.W {
-			gp.CellWithOption(&Rect{W: rectangle.W, H: lineHeight}, string(line), opt)
+			buf := reverseRune(line, opt.RtlLineBrk)
+			gp.CellWithOption(&Rect{W: rectangle.W, H: lineHeight}, string(buf), opt)
 			gp.Br(lineHeight)
 			gp.SetX(x)
 			totalLineHeight = totalLineHeight + lineHeight
@@ -1301,12 +1343,25 @@ func (gp *GoPdf) MultiCellWithOption(rectangle *Rect, text string, opt CellOptio
 		line = append(line, v)
 
 		if i == length-1 {
-			gp.CellWithOption(&Rect{W: rectangle.W, H: lineHeight}, string(line), opt)
+			buf := reverseRune(line, opt.RtlLineBrk)
+			gp.CellWithOption(&Rect{W: rectangle.W, H: lineHeight}, string(buf), opt)
 			gp.Br(lineHeight)
 			gp.SetX(x)
 		}
 	}
 	return nil
+}
+
+func reverseRune(rr []rune, isReverse bool) []rune {
+	if !isReverse {
+		return rr
+	}
+	size := len(rr)
+	buf := make([]rune, size)
+	for i := 0; i < size; i++ {
+		buf[size-i-1] = rr[i]
+	}
+	return buf
 }
 
 // SplitText splits text into multiple lines based on width performing potential mid-word breaks.

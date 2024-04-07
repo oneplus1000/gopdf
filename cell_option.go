@@ -24,6 +24,8 @@ type CellOption struct {
 	CoefUnderlinePosition  float64
 	CoefLineHeight         float64
 	CoefUnderlineThickness float64
-
+	// Experimental :
+	//RtlLineBrk is right-to-left lang, Used for line breaks only. It does not result in alternating the order of the letters.
+	RtlLineBrk       bool
 	extGStateIndexes []int
 }
