@@ -229,7 +229,7 @@ func (t *TTFParser) ParseFontData(fontData []byte) error {
 		return err
 	}
 	if !bytes.Equal(version, []byte{0x00, 0x01, 0x00, 0x00}) {
-		return errors.New("Unrecognized file (font) format")
+		return errors.New("unrecognized file (font) format")
 	}
 
 	i := uint(0)
@@ -307,6 +307,10 @@ func (t *TTFParser) ParseFontData(fontData []byte) error {
 		return err
 	}
 	err = t.ParseLoca(fd)
+	if err != nil {
+		return err
+	}
+	err = t.ParseGPOS(fd)
 	if err != nil {
 		return err
 	}
