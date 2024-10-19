@@ -310,7 +310,7 @@ func (t *TTFParser) ParseFontData(fontData []byte) error {
 	if err != nil {
 		return err
 	}
-	err = t.ParseGPOS(fd)
+	err = t.ParseGSUB(fd)
 	if err != nil {
 		return err
 	}
