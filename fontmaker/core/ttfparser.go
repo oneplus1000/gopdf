@@ -77,6 +77,8 @@ type TTFParser struct {
 	//kerning
 	useKerning bool //user config for use or not use kerning
 	kern       *KernTable
+
+	//gpos
 }
 
 var Symbolic = 1 << 2
