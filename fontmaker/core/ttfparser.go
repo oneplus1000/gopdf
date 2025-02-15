@@ -77,6 +77,9 @@ type TTFParser struct {
 	//kerning
 	useKerning bool //user config for use or not use kerning
 	kern       *KernTable
+
+	//gpos
+	gpos *GPOSTable
 }
 
 var Symbolic = 1 << 2
@@ -316,6 +319,11 @@ func (t *TTFParser) ParseFontData(fontData []byte) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err = t.ParseGPOS(fd)
+	if err != nil {
+		return err
 	}
 
 	t.cachedFontData = fontData
@@ -979,6 +987,16 @@ func (t *TTFParser) ReadUShort(fd *bytes.Reader) (uint, error) {
 	return uint(n), nil
 }
 
+// ReadUShort read ushort
+func (t *TTFParser) ReadUShortUint16(fd *bytes.Reader) (uint16, error) {
+	buff, err := t.Read(fd, 2)
+	if err != nil {
+		return 0, err
+	}
+	n := binary.BigEndian.Uint16(buff)
+	return n, nil
+}
+
 // ReadShort read short
 func (t *TTFParser) ReadShort(fd *bytes.Reader) (int, error) {
 	u, err := t.ReadUShort(fd)
@@ -1034,4 +1052,17 @@ func (t *TTFParser) Read(fd *bytes.Reader, length int) ([]byte, error) {
 		return nil, errors.New("file out of length")
 	}
 	return buff, nil
+}
+
+func fdCurrentOffset(fd *bytes.Reader) int64 {
+	offset := fd.Size() - int64(fd.Len())
+	return offset
+}
+
+func fdJumpTo(fd *bytes.Reader, offset int64) error {
+	_, err := fd.Seek(offset, 0)
+	if err != nil {
+		return err
+	}
+	return nil
 }
