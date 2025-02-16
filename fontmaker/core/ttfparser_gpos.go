@@ -145,7 +145,23 @@ func (t *TTFParser) parseScriptTable(fd *bytes.Reader,
 	scTable.LangSysCount = langSysCount
 
 	//read LangSysRecords
-	//TODO: implement LangSysRecords https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2 langSysRecords
+	//LangSysRecords https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2 langSysRecords
+	langSysRecords := make([]LangSysRecord, langSysCount)
+	for i := uint16(0); i < langSysCount; i++ {
+		langSysTag, err := t.ReadULong(fd)
+		if err != nil {
+			return ScriptTable{}, err
+		}
+		langSysOffset, err := t.ReadUShortUint16(fd)
+		if err != nil {
+			return ScriptTable{}, err
+		}
+		langSysRecords[i] = LangSysRecord{
+			LangSysTag:    langSysTag,
+			langSysOffset: langSysOffset,
+			LangSys:       LangSysTable{},
+		}
+	}
 
 	//read DefaultLangSys
 	if defaultLangSysOffset != 0 {
@@ -155,6 +171,16 @@ func (t *TTFParser) parseScriptTable(fd *bytes.Reader,
 		}
 		scTable.DefaultLangSys = defaultLangSysTable
 	}
+
+	//read LangSys
+	for i, langSysRecord := range langSysRecords {
+		langSysTable, err := t.parseLangSysTable(fd, beginningOfScriptTable+int64(langSysRecord.langSysOffset))
+		if err != nil {
+			return ScriptTable{}, err
+		}
+		langSysRecords[i].LangSys = langSysTable
+	}
+	scTable.LangSysRecords = langSysRecords
 
 	return scTable, nil
 }

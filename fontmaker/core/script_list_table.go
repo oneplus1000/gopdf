@@ -12,12 +12,7 @@ type ScriptRecord struct {
 }
 
 func (s ScriptRecord) ScriptTagString() string {
-	return string([]byte{
-		byte(s.ScriptTag >> 24),
-		byte(s.ScriptTag >> 16),
-		byte(s.ScriptTag >> 8),
-		byte(s.ScriptTag),
-	})
+	return uintToString(s.ScriptTag)
 }
 
 type ScriptTable struct {
@@ -28,12 +23,26 @@ type ScriptTable struct {
 }
 
 type LangSysRecord struct {
-	LangSysTag uint
-	LangSys    LangSysTable
+	LangSysTag    uint
+	langSysOffset uint16
+	LangSys       LangSysTable
+}
+
+func (l LangSysRecord) LangSysTagString() string {
+	return uintToString(l.LangSysTag)
 }
 
 type LangSysTable struct {
 	LookupOrderOffset uint16
 	ReqFeatureIndex   uint16
 	FeatureIndex      []uint16
+}
+
+func uintToString(u uint) string {
+	return string([]byte{
+		byte(u >> 24),
+		byte(u >> 16),
+		byte(u >> 8),
+		byte(u),
+	})
 }
