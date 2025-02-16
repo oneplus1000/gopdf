@@ -27,6 +27,8 @@ func TestParseNotoSansThai(t *testing.T) {
 	if p.gpos.Version() != version {
 		t.Errorf("GPOS table version not match")
 	}
+
+	//script list
 	if int(p.gpos.ScriptList.ScriptCount) != scriptListCount {
 		t.Errorf("GPOS table script count not match")
 	}
@@ -57,6 +59,11 @@ func TestParseNotoSansThai(t *testing.T) {
 	if p.gpos.ScriptList.ScriptRecords[1].ScriptTagString() != scriptTagtag1 {
 		x := p.gpos.ScriptList.ScriptRecords[1].ScriptTagString()
 		t.Errorf("GPOS table script tag not match '%s'", x)
+	}
+
+	//feature list
+	if len(p.gpos.FeatureList.FeatureRecords) != 3 {
+		t.Errorf("GPOS table feature count not match")
 	}
 
 }
@@ -101,6 +108,36 @@ func TestParseLomaBold(t *testing.T) {
 			}
 			if scriptRecord.ScriptTable.DefaultLangSys.ReqFeatureIndex != 0xFFFF {
 				t.Errorf("GPOS table script table default lang sys req feature index not match at %d %d", i, scriptRecord.ScriptTable.DefaultLangSys.ReqFeatureIndex)
+			}
+		}
+	}
+
+	//feature list
+	if p.gpos.FeatureList.FeatureCount != 3 || len(p.gpos.FeatureList.FeatureRecords) != 3 {
+		t.Errorf("GPOS table feature count not match")
+	}
+
+	for i, featureRecord := range p.gpos.FeatureList.FeatureRecords {
+		if i == 0 {
+			if featureRecord.FeatureTagString() != "kern" {
+				t.Errorf("GPOS table feature tag not match at %d %s", i, featureRecord.FeatureTagString())
+			}
+			if featureRecord.FeatureTable.LookupCount != 1 || len(featureRecord.FeatureTable.LookupListIndex) != 1 {
+				t.Errorf("GPOS table feature lookup count not match at %d %d", i, featureRecord.FeatureTable.LookupCount)
+			}
+		} else if i == 1 {
+			if featureRecord.FeatureTagString() != "mark" {
+				t.Errorf("GPOS table feature tag not match at %d %s", i, featureRecord.FeatureTagString())
+			}
+			if featureRecord.FeatureTable.LookupCount != 2 || len(featureRecord.FeatureTable.LookupListIndex) != 2 {
+				t.Errorf("GPOS table feature lookup count not match at %d %d", i, featureRecord.FeatureTable.LookupCount)
+			}
+		} else if i == 2 {
+			if featureRecord.FeatureTagString() != "mkmk" {
+				t.Errorf("GPOS table feature tag not match at %d %s", i, featureRecord.FeatureTagString())
+			}
+			if featureRecord.FeatureTable.LookupCount != 1 || len(featureRecord.FeatureTable.LookupListIndex) != 1 {
+				t.Errorf("GPOS table feature lookup count not match at %d %d", i, featureRecord.FeatureTable.LookupCount)
 			}
 		}
 	}

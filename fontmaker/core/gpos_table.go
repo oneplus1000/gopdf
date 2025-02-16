@@ -8,7 +8,8 @@ type GPOSTable struct {
 	LookupListOffset        uint16
 	FeatureVariationsOffset uint
 	//table
-	ScriptList ScriptListTable
+	ScriptList  ScriptListTable
+	FeatureList FeatureListTable
 }
 
 func (g GPOSTable) Version() uint {

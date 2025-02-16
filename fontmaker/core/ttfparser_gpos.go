@@ -22,6 +22,10 @@ func (t *TTFParser) ParseGPOS(fd *bytes.Reader) error {
 	if err != nil {
 		return err
 	}
+	err = t.parseFeatureList(fd)
+	if err != nil {
+		return err
+	}
 
 	return nil
 
@@ -118,6 +122,90 @@ func (t *TTFParser) parseGPOSScriptList(fd *bytes.Reader) error {
 	}
 
 	return nil
+}
+
+func (t *TTFParser) parseFeatureList(fd *bytes.Reader) error {
+
+	err := t.Seek(fd, "GPOS")
+	if err == ErrTableNotFound {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	gposOffset := fdCurrentOffset(fd) //save current offset
+	featureListOffset := t.gpos.FeatureListOffset
+	err = t.Skip(fd, int(featureListOffset)) //skip count
+	if err != nil {
+		return err
+	}
+
+	featureCount, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return err
+	}
+	t.gpos.FeatureList.FeatureCount = featureCount
+
+	//check feature records
+	featureRecords := make([]FeatureRecord, featureCount)
+	i := uint16(0)
+	for i = 0; i < featureCount; i++ {
+		featureTag, err := t.ReadULong(fd)
+		if err != nil {
+			return err
+		}
+		featureOffset, err := t.ReadUShortUint16(fd)
+		if err != nil {
+			return err
+		}
+		featureRecords[i] = FeatureRecord{
+			FeatureTag:    featureTag,
+			FeatureOffset: featureOffset,
+		}
+		t.gpos.FeatureList.FeatureRecords = featureRecords
+	}
+
+	//parse feature table
+	beginningOfFeatureLis := gposOffset + int64(featureListOffset)
+	for i = 0; i < featureCount; i++ {
+		featureTable, err := t.parseFeatureTable(fd, beginningOfFeatureLis+int64(featureRecords[i].FeatureOffset))
+		if err != nil {
+			return err
+		}
+		featureRecords[i].FeatureTable = featureTable
+	}
+
+	return nil
+}
+
+func (t *TTFParser) parseFeatureTable(fd *bytes.Reader, featureOffset int64) (FeatureTable, error) {
+	err := fdJumpTo(fd, featureOffset)
+	if err != nil {
+		return FeatureTable{}, err
+	}
+
+	featureParamsOffset, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return FeatureTable{}, err
+	}
+
+	lookupCount, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return FeatureTable{}, err
+	}
+
+	lookupListIndex := make([]uint16, lookupCount)
+	for i := uint16(0); i < lookupCount; i++ {
+		lookupListIndex[i], err = t.ReadUShortUint16(fd)
+		if err != nil {
+			return FeatureTable{}, err
+		}
+	}
+
+	return FeatureTable{
+		FeatureParamsOffset: featureParamsOffset,
+		LookupCount:         lookupCount,
+		LookupListIndex:     lookupListIndex,
+	}, nil
 }
 
 func (t *TTFParser) parseScriptTable(fd *bytes.Reader,
