@@ -10,6 +10,7 @@ type GPOSTable struct {
 	//table
 	ScriptList  ScriptListTable
 	FeatureList FeatureListTable
+	LookupList  LookupListTable
 }
 
 func (g GPOSTable) Version() uint {

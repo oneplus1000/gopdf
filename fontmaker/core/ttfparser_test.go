@@ -142,4 +142,32 @@ func TestParseLomaBold(t *testing.T) {
 		}
 	}
 
+	//lookup list
+	if p.gpos.LookupList.LookupCount != 4 || len(p.gpos.LookupList.LookupOffsets) != 4 || len(p.gpos.LookupList.LookupTables) != 4 {
+		t.Errorf("GPOS table lookup count not match")
+	}
+
+	for i, lookupTable := range p.gpos.LookupList.LookupTables {
+		if i == 0 {
+			if lookupTable.LookupType != 4 {
+				t.Errorf("GPOS table lookup type not match at %d %d", i, lookupTable.LookupType)
+			}
+			if lookupTable.LookupFlag != 0 {
+				t.Errorf("GPOS table lookup flag not match at %d %d", i, lookupTable.LookupFlag)
+			}
+			if lookupTable.SubTableCount != 1 || len(lookupTable.SubTableOffset) != 1 || len(lookupTable.SubTables) != 1 {
+				t.Errorf("GPOS table lookup sub table count not match at %d %d", i, lookupTable.SubTableCount)
+			}
+			for _, sub := range lookupTable.SubTables {
+
+				if sub.GetFormat() != 1 {
+					t.Errorf("GPOS table lookup sub table format not match at %d %d", i, sub.GetFormat())
+				}
+				//if sub.(*LookupSubtableFormat1).GlyphCount != 3 || len(sub.(*LookupSubtableFormat1).GlyphIdArray) != 3 {
+				//	t.Errorf("GPOS table lookup sub table glyph count not match at %d %d", i, sub.(*LookupSubtableFormat1).GlyphCount)
+				//}
+			}
+		}
+	}
+
 }

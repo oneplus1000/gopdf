@@ -4,6 +4,8 @@ import (
 	"bytes"
 )
 
+const useMarkFilteringSet = 0x0010
+
 func (t *TTFParser) ParseGPOS(fd *bytes.Reader) error {
 	t.gpos = nil //clear
 	err := t.Seek(fd, "GPOS")
@@ -22,7 +24,11 @@ func (t *TTFParser) ParseGPOS(fd *bytes.Reader) error {
 	if err != nil {
 		return err
 	}
-	err = t.parseFeatureList(fd)
+	err = t.parseGPOSFeatureList(fd)
+	if err != nil {
+		return err
+	}
+	err = t.parseGPOSLookupList(fd)
 	if err != nil {
 		return err
 	}
@@ -124,7 +130,7 @@ func (t *TTFParser) parseGPOSScriptList(fd *bytes.Reader) error {
 	return nil
 }
 
-func (t *TTFParser) parseFeatureList(fd *bytes.Reader) error {
+func (t *TTFParser) parseGPOSFeatureList(fd *bytes.Reader) error {
 
 	err := t.Seek(fd, "GPOS")
 	if err == ErrTableNotFound {
@@ -175,6 +181,194 @@ func (t *TTFParser) parseFeatureList(fd *bytes.Reader) error {
 	}
 
 	return nil
+}
+
+func (t *TTFParser) parseGPOSLookupList(fd *bytes.Reader) error {
+	err := t.Seek(fd, "GPOS")
+	if err == ErrTableNotFound {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	gposOffset := fdCurrentOffset(fd) //save current offset
+	lookupListOffset := t.gpos.LookupListOffset
+
+	_ = gposOffset
+	err = t.Skip(fd, int(lookupListOffset)) //skip count
+	if err != nil {
+		return err
+	}
+
+	lookupCount, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return err
+	}
+	t.gpos.LookupList.LookupCount = lookupCount
+
+	lookupOffsets := make([]uint16, lookupCount)
+	for i := uint16(0); i < lookupCount; i++ {
+		lookupOffsets[i], err = t.ReadUShortUint16(fd)
+		if err != nil {
+			return err
+		}
+	}
+	t.gpos.LookupList.LookupOffsets = lookupOffsets
+
+	//parse lookup table
+	beginningOfLookupList := gposOffset + int64(lookupListOffset)
+	lookupTables := make([]LookupTable, lookupCount)
+	for i := uint16(0); i < lookupCount; i++ {
+		lookupTable, err := t.parseLookupTable(fd, beginningOfLookupList+int64(lookupOffsets[i]))
+		if err != nil {
+			return err
+		}
+		lookupTables[i] = lookupTable
+	}
+	t.gpos.LookupList.LookupTables = lookupTables
+
+	return nil
+}
+
+func (t *TTFParser) parseLookupTable(fd *bytes.Reader, lookupOffset int64) (LookupTable, error) {
+	err := fdJumpTo(fd, lookupOffset)
+	if err != nil {
+		return LookupTable{}, err
+	}
+
+	lookupType, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return LookupTable{}, err
+	}
+
+	lookupFlag, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return LookupTable{}, err
+	}
+
+	subTableCount, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return LookupTable{}, err
+	}
+
+	subTableOffset := make([]uint16, subTableCount)
+	for i := uint16(0); i < subTableCount; i++ {
+		subTableOffset[i], err = t.ReadUShortUint16(fd)
+		if err != nil {
+			return LookupTable{}, err
+		}
+	}
+
+	markFilteringSet := uint16(0)
+	if lookupFlag == useMarkFilteringSet {
+		markFilteringSet, err = t.ReadUShortUint16(fd)
+		if err != nil {
+			return LookupTable{}, err
+		}
+	}
+
+	subTables := make([]LookupSubtable, subTableCount)
+	for i, offset := range subTableOffset {
+		err := fdJumpTo(fd, lookupOffset+int64(offset))
+		if err != nil {
+			return LookupTable{}, err
+		}
+		format, err := t.ReadUShortUint16(fd)
+		if err != nil {
+			return LookupTable{}, err
+		}
+		switch format {
+		case 1:
+			{
+				subtableFormat1, err := t.parseLookupSubtableFormat1(fd)
+				if err != nil {
+					return LookupTable{}, err
+				}
+				subtableFormat1.BeginningOfSinglePosSubtable = lookupOffset + int64(offset)
+				subTables[i] = subtableFormat1
+			}
+		}
+	}
+
+	for _, subTable := range subTables {
+		if subTable.GetFormat() == 1 {
+			subTableFormat1 := subTable.(LookupSubtableFormat1)
+			err := fdJumpTo(fd, subTable.GetBeginningOfSinglePosSubtable()+int64(subTableFormat1.CoverageOffset))
+			if err != nil {
+				return LookupTable{}, err
+			}
+			coverageFormat, err := t.ReadUShortUint16(fd)
+			if err != nil {
+				return LookupTable{}, err
+			}
+			if coverageFormat == 1 {
+				//parse coverage format 1
+				_, err = t.parseCoverageFormat1(fd)
+				if err != nil {
+					return LookupTable{}, err
+				}
+			} else if coverageFormat == 2 {
+				//parse coverage format 2
+				_, err := t.ReadUShortUint16(fd)
+				if err != nil {
+					return LookupTable{}, err
+				}
+				_, err = t.ReadUShortUint16(fd)
+				if err != nil {
+					return LookupTable{}, err
+				}
+			}
+		}
+	}
+
+	return LookupTable{
+		LookupType:       lookupType,
+		LookupFlag:       lookupFlag,
+		SubTableCount:    subTableCount,
+		SubTableOffset:   subTableOffset,
+		SubTables:        subTables,
+		MarkFilteringSet: markFilteringSet,
+	}, nil
+}
+
+func (t *TTFParser) parseCoverageFormat1(fd *bytes.Reader) (CoverageFormat1, error) {
+
+	coverageSize, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return CoverageFormat1{}, err
+	}
+
+	glyphArray := make([]uint16, coverageSize)
+	for i := uint16(0); i < coverageSize; i++ {
+		glyphArray[i], err = t.ReadUShortUint16(fd)
+		if err != nil {
+			return CoverageFormat1{}, err
+		}
+	}
+
+	return CoverageFormat1{
+		Format:       1,
+		CoverageSize: coverageSize,
+		GlyphArray:   glyphArray,
+	}, nil
+}
+
+func (t *TTFParser) parseLookupSubtableFormat1(fd *bytes.Reader) (LookupSubtableFormat1, error) {
+
+	coverageOffset, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return LookupSubtableFormat1{}, err
+	}
+
+	valueFormat, err := t.ReadUShortUint16(fd)
+	if err != nil {
+		return LookupSubtableFormat1{}, err
+	}
+
+	return LookupSubtableFormat1{
+		Format:         1,
+		CoverageOffset: coverageOffset,
+		ValueFormat:    valueFormat,
+	}, nil
 }
 
 func (t *TTFParser) parseFeatureTable(fd *bytes.Reader, featureOffset int64) (FeatureTable, error) {
