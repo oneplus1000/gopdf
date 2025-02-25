@@ -45,3 +45,23 @@ type CoverageFormat1 struct {
 	CoverageSize uint16
 	GlyphArray   []uint16
 }
+
+/*
+*
+Lookup type 4 subtable: mark-to-base attachment positioning
+Type	Name	Description
+uint16	format	Format identifier — format = 1.
+Offset16	markCoverageOffset	Offset to markCoverage table, from beginning of MarkBasePos subtable.
+Offset16	baseCoverageOffset	Offset to baseCoverage table, from beginning of MarkBasePos subtable.
+uint16	markClassCount	Number of classes defined for marks.
+Offset16	markArrayOffset	Offset to MarkArray table, from beginning of MarkBasePos subtable.
+Offset16	baseArrayOffset	Offset to BaseArray table, from beginning of MarkBasePos subtable.
+*/
+type LookupSubtableType4 struct {
+	Format             uint16
+	MarkCoverageOffset uint16
+	BaseCoverageOffset uint16
+	MarkClassCount     uint16
+	MarkArrayOffset    uint16
+	BaseArrayOffset    uint16
+}
