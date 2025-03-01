@@ -65,3 +65,7 @@ type LookupSubtableType4 struct {
 	MarkArrayOffset    uint16
 	BaseArrayOffset    uint16
 }
+
+type BaseRecord struct {
+	BaseAnchorOffsets []uint16
+}
